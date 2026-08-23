@@ -214,7 +214,7 @@ def model_fit_minimization_step_mp(x0, tree, all_branches, branch_lengths, synte
     opt = optimize.minimize(f_f_gradient,x0,method='SLSQP',jac=True,bounds=minimization_bounds,options={'maxiter':max_steps})
     return opt.x, opt.fun
 
-def minimize_F(n_proc, n_initial_conditions, tree, all_branches, branch_lengths, synteny_distributions, gamma_bounds, theta_bounds, max_steps, branch_dependent = True):
+def minimize_F(n_proc, n_initial_conditions, tree, all_branches, branch_lengths, synteny_distributions, gamma_bounds, theta_bounds, max_steps, branch_dependent = True, check_initial_conditions = False, F_initial_max = 100):
     rng = np.random.default_rng()
     X0 = []
     print('Generating initial parameters',flush=True)
@@ -226,16 +226,24 @@ def minimize_F(n_proc, n_initial_conditions, tree, all_branches, branch_lengths,
                 theta0 = rng.random(size=len(all_branches)) * (theta_bounds[1] - theta_bounds[0]) + theta_bounds[0]
                 x0[::2] = gamma0
                 x0[1::2] = theta0
-                F0 = F_all_pairs(x0, tree, all_branches, branch_lengths, synteny_distributions)
+                if check_initial_conditions:
+                    F0 = F_all_pairs(x0, tree, all_branches, branch_lengths, synteny_distributions)
+                    if F0 <= F_initial_max:
+                        break
+                else:
+                    break
             else:
                 x0 = np.zeros(2)
                 gamma0 = rng.random() * (gamma_bounds[1] - gamma_bounds[0]) + gamma_bounds[0]
                 theta0 = rng.random() * (theta_bounds[1] - theta_bounds[0]) + theta_bounds[0]
                 x0[0] = gamma0
                 x0[1] = theta0
-                F0 = F_all_pairs(convert_two_parameters_to_full(x0, len(all_branches)), tree, all_branches, branch_lengths, synteny_distributions)
-            if F0 < 100:
-                break
+                if check_initial_conditions:
+                    F0 = F_all_pairs(convert_two_parameters_to_full(x0, len(all_branches)), tree, all_branches, branch_lengths, synteny_distributions)
+                    if F0 <= F_initial_max:
+                        break
+                else:
+                    break
         X0.append(np.copy(x0))
 
     print('Beginning minimization',flush=True)
