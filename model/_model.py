@@ -8,21 +8,20 @@ import warnings
 from ._model_tools import *
 
 def p_SBL(n, t_path, gamma_path, theta_path):
-    n_branches = len(t_path)
-    G = []
-    O1 = []
-    O2 = []
-    for bi in range(n_branches):
-        t = t_path[bi]
-        gamma = gamma_path[bi]
-        theta = theta_path[bi]
-        G.append(gamma * t)
-        O1.append(gamma * t * np.exp(-theta*(n-1)))
-        O2.append(gamma * t * np.exp(-theta*n))
-    G = np.sum(G)
-    O1 = np.sum(O1)
-    O2 = np.sum(O2)
-    return (np.exp(-G*n+O1) - np.exp(-G*(n+1)+O2) - np.exp(-G*(n+1))*(1-np.exp(-G)))/(1-np.exp(-2*G))
+    t_path = np.array(t_path)
+    gamma_path = np.array(gamma_path)
+    theta_path = np.array(theta_path)
+    G = np.sum(gamma_path * t_path)
+    O1 = np.sum(gamma_path * t_path * (1 - np.exp(-theta_path*(n-1))) / (1 - np.exp(-theta_path)))
+    O2 = np.sum(gamma_path * t_path * (1 - np.exp(-theta_path*n)) / (1 - np.exp(-theta_path)))
+    L1 = np.sum(gamma_path * t_path * np.exp(-theta_path) * (1 - np.exp(-theta_path*(n-1))) / (1 - np.exp(-theta_path)))
+    L2 = np.sum(gamma_path * t_path * np.exp(-theta_path) * (1 - np.exp(-theta_path*n)) / (1 - np.exp(-theta_path)))
+    A = (np.exp(-G*n)/(1-np.exp(-2*G)))
+    B = np.exp(-(O1-G))
+    C = np.exp(-O2)
+    D = np.exp(-(L1+G))
+    E = np.exp(-(L2+2*G))
+    return A * (B - C - D + E)
 
 def p_synteny_block_size(spA, spB, params, tree, branch_lengths, n_min = 3, n_max = 2000):
     path = get_path(spA,spB,tree)
