@@ -56,34 +56,36 @@ def p_synteny_block_size_gradient(spA, spB, params, tree, branch_lengths, map_br
     theta_path = np.array(theta_path).reshape([len(path),1])
     n_vals = np.vstack(len(path)*[np.arange(1,n_max+1)])
     
-    G_AB = np.sum(gamma_path*t_path)
-    O_AB_n = np.sum(gamma_path*t_path*np.exp(-theta_path*n_vals),axis=0)
-    O_AB_nm1 = np.sum(gamma_path*t_path*np.exp(-theta_path*(n_vals-1)),axis=0)
+    G = np.sum(gamma_path * t_path)
+    O_nm1 = np.sum(gamma_path * t_path * (1 - np.exp(-theta_path*(n_vals-1))) / (1 - np.exp(-theta_path)),axis=0)
+    O_n = np.sum(gamma_path * t_path * (1 - np.exp(-theta_path*n_vals)) / (1 - np.exp(-theta_path)),axis=0)
+    L_nm1 = np.sum(gamma_path * t_path * np.exp(-theta_path) * (1 - np.exp(-theta_path*(n_vals-1))) / (1 - np.exp(-theta_path)),axis=0)
+    L_n = np.sum(gamma_path * t_path * np.exp(-theta_path) * (1 - np.exp(-theta_path*n_vals)) / (1 - np.exp(-theta_path)),axis=0)
     
     P_unnormed = np.array([p_SBL(n, t_path.flatten(), gamma_path.flatten(), theta_path.flatten()) for n in np.arange(n_min,n_max+1)])
     Z = 1 - np.sum([p_SBL(n, t_path.flatten(), gamma_path.flatten(), theta_path.flatten()) for n in np.arange(1,n_min)])
     P = P_unnormed / Z
 
-    A = np.exp(-G_AB*n_vals[0])/(1-np.exp(-2*G_AB))
-    dA_dgamma = t_path*((n_vals-2)*np.exp(-G_AB*(n_vals+2))-n_vals*np.exp(-G_AB*n_vals))/(1-np.exp(-2*G_AB))**2
+    A = np.exp(-G*n_vals[0])/(1-np.exp(-2*G))
+    dA_dgamma = t_path*((n_vals-2)*np.exp(-G*(n_vals+2))-n_vals*np.exp(-G*n_vals))/(1-np.exp(-2*G))**2
     dA_dtheta = 0
     
-    B = np.exp(O_AB_nm1)
-    dB_dgamma = t_path*np.exp(-theta_path*(n_vals-1))*np.exp(O_AB_nm1)
-    dB_dtheta = -gamma_path*t_path*(n_vals-1)*np.exp(-theta_path*(n_vals-1))*np.exp(O_AB_nm1)
+    B = np.exp(-(O_nm1-G))
+    dB_dgamma = -(t_path*(1-np.exp(-theta_path*(n_vals-1)))/(1-np.exp(-theta_path)) - t_path) * B
+    dB_dtheta = -gamma_path*t_path*((n_vals-1)*np.exp(-theta_path*(n_vals-1))/(1-np.exp(-theta_path)) - np.exp(-theta_path)*(1-np.exp(-theta_path*(n_vals-1)))/(1-np.exp(-theta_path))**2) * B
     
-    C = np.exp(O_AB_n - G_AB)
-    dC_dgamma = t_path*(np.exp(-theta_path*n_vals)-1)*np.exp(O_AB_n-G_AB)
-    dC_dtheta = -gamma_path*t_path*n_vals*np.exp(-theta_path*n_vals)*np.exp(O_AB_n-G_AB)
+    C = np.exp(-O_n)
+    dC_dgamma = -t_path*(1-np.exp(-theta_path*n_vals))/(1-np.exp(-theta_path)) * C
+    dC_dtheta = -gamma_path*t_path*(n_vals*np.exp(-theta_path*n_vals)/(1-np.exp(-theta_path)) - np.exp(-theta_path)*(1-np.exp(-theta_path*n_vals))/(1-np.exp(-theta_path))**2) * C
+        
+    D = np.exp(-(L_nm1+G))
+    dD_dgamma = -(t_path*np.exp(-theta_path)*(1-np.exp(-theta_path*(n_vals-1)))/(1-np.exp(-theta_path)) + t_path) * D
+    dD_dtheta = -gamma_path*t_path*np.exp(-theta_path)*((n_vals*np.exp(-theta_path*(n_vals-1))-1)*(1-np.exp(-theta_path)) - np.exp(-theta_path)*(1-np.exp(-theta_path*(n_vals-1)))) / (1-np.exp(-theta_path))**2 * D
     
-    D = np.exp(-G_AB)
-    dD_dgamma = -t_path*np.exp(-G_AB)
-    dD_dtheta = 0
-    
-    E = np.exp(-2*G_AB)
-    dE_dgamma = -2*t_path*np.exp(-2*G_AB)
-    dE_dtheta = 0
-    
+    E = np.exp(-(L_n+2*G))
+    dE_dgamma = -(t_path*np.exp(-theta_path)*(1-np.exp(-theta_path*n_vals))/(1-np.exp(-theta_path)) + 2*t_path) * E
+    dE_dtheta = -gamma_path*t_path*np.exp(-theta_path)*(((n_vals+1)*np.exp(-theta_path*n_vals)-1)*(1-np.exp(-theta_path)) - np.exp(-theta_path)*(1-np.exp(-theta_path*n_vals))) / (1-np.exp(-theta_path))**2 * E
+        
     dP_unnormed_dgamma = A * (dB_dgamma - dC_dgamma - dD_dgamma + dE_dgamma) + dA_dgamma * (B - C - D + E)
     dP_unnormed_dtheta = A * (dB_dtheta - dC_dtheta - dD_dtheta + dE_dtheta) + dA_dtheta * (B - C - D + E)
     
