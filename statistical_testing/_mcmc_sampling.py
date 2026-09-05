@@ -36,8 +36,8 @@ def mcmc_step(X1, beta, n, species_labels, tree, params):
     s = np.random.choice(range(S))
     X2 = np.copy(X1)
     X2[s] = 1 - X2[s]
-    H1, L1 = camin_sokal_parsimony(X1,species_labels,tree)
-    H2, L2 = camin_sokal_parsimony(X2,species_labels,tree)
+    H1 = camin_sokal_parsimony(X1,species_labels,tree)
+    H2 = camin_sokal_parsimony(X2,species_labels,tree)
     q1 = calculate_qHn(n, H1, params, tree)
     q2 = calculate_qHn(n, H2, params, tree)
     A = np.min([1,(q2/q1)**beta])
@@ -50,8 +50,8 @@ def mcmc_step(X1, beta, n, species_labels, tree, params):
         return np.array(X1), q1, T1
 
 def exchange_step(XA, betaA, XB, betaB, n, species_labels, tree, params):
-    HA, LA = camin_sokal_parsimony(XA,species_labels,tree)
-    HB, LB = camin_sokal_parsimony(XB,species_labels,tree)
+    HA = camin_sokal_parsimony(XA,species_labels,tree)
+    HB = camin_sokal_parsimony(XB,species_labels,tree)
     qA = calculate_qHn(n, HA, params, tree)
     qB = calculate_qHn(n, HB, params, tree)
     VA = -np.log(qA)
