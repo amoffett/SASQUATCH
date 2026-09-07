@@ -67,19 +67,15 @@ def mcmc_replica(rX, n_steps, betas, n, species_labels, tree, params):
     r, X = rX
     beta = betas[r]
     n_step = 0
-    q = np.zeros(n_steps)
-    T = np.zeros(n_steps)
     while n_step < n_steps:
-        X, qn, Tn = mcmc_step(X, beta, n, species_labels, tree, params)
-        q[n_step] = qn
-        T[n_step] = Tn
+        X, q, T = mcmc_step(X, beta, n, species_labels, tree, params)
         n_step += 1
     return r, X, q, T
 
 def sample_histories_mcmc_parallel_tempering(n, initial_trait_array, tree, species_labels, params, samples = 50000, burn_in = 1000, replicas = 10, steps_exchange = 500, beta_max = 1/3, save_trait_arrays = False, parallel = False, verbose = False):
     X = {i:np.copy(initial_trait_array) for i in range(replicas)}
-    q = np.zeros([replicas,samples])
-    T = np.zeros([replicas,samples])
+    q = np.zeros([replicas,int(samples/steps_exchange)])
+    T = np.zeros([replicas,int(samples/steps_exchange)])
     if save_trait_arrays:
         X_out = np.zeros([replicas, initial_trait_array.shape[0], int(samples/steps_exchange)])
 
@@ -117,9 +113,9 @@ def sample_histories_mcmc_parallel_tempering(n, initial_trait_array, tree, speci
             for r in X.keys():
                 X2, q2, T2 = mcmc_step(X[r], betas[r], n, species_labels, tree, params)
                 X[r] = X2
-                q[r,i-1] = q2
-                T[r,i-1] = T2
             if i % steps_exchange == 0:
+                q[r,int((i-1)/steps_exchange)] = q2
+                T[r,int((i-1)/steps_exchange)] = T2
                 if save_trait_arrays:
                     for r in X.keys():
                         X_out[r,:,int((i-1)/steps_exchange)] = X[r]
@@ -150,8 +146,8 @@ def sample_histories_mcmc_parallel_tempering(n, initial_trait_array, tree, speci
                 pool.join()
             for pool_result in pool_results:
                 X[pool_result[0]] = pool_result[1]
-                q[pool_result[0],(i-1)*steps_exchange:i*steps_exchange] = pool_result[2]
-                T[pool_result[0],(i-1)*steps_exchange:i*steps_exchange] = pool_result[3]
+                q[pool_result[0],i-1] = pool_result[2]
+                T[pool_result[0],i-1] = pool_result[3]
 
                 if save_trait_arrays:
                     X_out[pool_result[0],:,i-1] = pool_result[1]
