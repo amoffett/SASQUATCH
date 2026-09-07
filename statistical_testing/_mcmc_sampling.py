@@ -154,7 +154,7 @@ def sample_histories_mcmc_parallel_tempering(n, initial_trait_array, tree, speci
                 T[pool_result[0],(i-1)*steps_exchange:i*steps_exchange] = pool_result[3]
 
                 if save_trait_arrays:
-                    X_out[pool_result[0],:,int((i-1)/steps_exchange)] = pool_result[1]
+                    X_out[pool_result[0],:,i] = pool_result[1]
             if verbose:
                 print("Exchange step %i"%i,flush=True)
             if exchange_mode == 0:
