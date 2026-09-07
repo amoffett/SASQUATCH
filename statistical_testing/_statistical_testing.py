@@ -4,7 +4,7 @@ from SASQUATCH.model import *
 from ._mcmc_sampling import *	
 from ._phylogeny_tools import *
 
-def compute_MBAR_expectations(block_trait_data, mcmc_sample_dictionary, subsampling_factor = 100):
+def compute_MBAR_expectations(block_trait_data, mcmc_sample_dictionary, subsampling_factor = 1):
     species_labels = block_trait_data['column_labels']
     block_sizes = np.unique([block_trait_data['data'][key]['block_size'] for key in block_trait_data['data'].keys()])
     p_values = []
