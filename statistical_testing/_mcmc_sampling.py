@@ -174,4 +174,7 @@ def sample_histories_mcmc_parallel_tempering(n, initial_trait_array, tree, speci
     results['betas'] = betas
     results['potentials'] = - np.log(q)
     results['conservation times'] = T
-    return results, X_out
+    if save_trait_arrays:
+        return results, X_out
+    else:
+        return results
