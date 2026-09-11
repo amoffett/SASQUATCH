@@ -1,5 +1,7 @@
 import numpy as np
 import pymbar
+from multiprocessing import Pool
+from functools import partial
 from SASQUATCH.model import *
 from ._mcmc_sampling import *	
 from ._phylogeny_tools import *
@@ -8,6 +10,37 @@ def calculate_reweighted_potential(trait_array, n, params_block, species_labels,
     H = camin_sokal_parsimony(trait_array, species_labels, tree)
     q = calculate_qHn(n, H, params_block, tree)
     return -np.log(q)
+
+def reweight_potentials(block_index_name, trait_arrays, path_to_mcmc_trait_data, params, species_labels, tree):
+    block_index, block_name = block_index_name
+    n = trait_arrays['data'][block_name]['block_size']
+    block_weight = trait_arrays['weights'][block_index]
+    params_block = {}
+    for key in params.keys():
+        gamma = params[key][0] * block_weight
+        theta = params[key][1]
+        params_block[key] = [gamma, theta]
+    X = np.load(path_to_mcmc_trait_data + 'trait_arrays_mcmc_n%i.npy'%n)
+    n_replicas = X.shape[0]
+    n_samples = X.shape[2]
+    V = np.zeros([n_replicas,n_samples])
+    for r in range(n_replicas):
+        for s in range(n_samples):
+            q_rs = calculate_weighted_potential(X[r,:,s], n, params_block, species_labels, tree)
+            V[r,s] = -np.log(q_rs)
+    return block_name, V
+
+def reweight_potentials_parallel(n_processes, trait_arrays, path_to_mcmc_trait_data, params, species_labels, tree):
+    V_blocks = {}
+    block_indices_names = [(index,name) for index, name in enumerate(trait_arrays['data'].keys())]
+    with Pool(processes=n_processes) as pool:
+        reweight_func = partial(reweight_potentials,trait_arrays=trait_arrays,path_to_mcmc_trait_data=path_to_mcmc_trait_data,params=params,species_labels=species_labels,tree=tree)
+        pool_results = pool.imap(reweight_func,block_indices_names)
+        pool.close()
+        pool.join()
+    for pool_result in pool_results:
+        V_blocks[pool_result[0]] = pool_result[1]
+    return V_blocks
 
 def compute_MBAR_expectations(block_trait_data, mcmc_sample_dictionary, subsampling_factor = 1):
     species_labels = block_trait_data['column_labels']
