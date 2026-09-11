@@ -28,6 +28,7 @@ def reweight_potentials(block_index_name, trait_arrays, path_to_mcmc_trait_data,
         for s in range(n_samples):
             q_rs = calculate_weighted_potential(X[r,:,s], n, params_block, species_labels, tree)
             V[r,s] = -np.log(q_rs)
+    del X
     return block_name, V
 
 def reweight_potentials_parallel(n_processes, trait_arrays, path_to_mcmc_trait_data, params, species_labels, tree):
