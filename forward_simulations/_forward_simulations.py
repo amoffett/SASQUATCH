@@ -2,6 +2,7 @@ import numpy as np
 from scipy import stats
 import networkx as ntx
 from SASQUATCH.model import *
+from SASQUATCH.statistical_testing import *
 
 def simulate_genome_evolution_2cut(karyotype, branch_lengths, branch_params):
     if np.unique(karyotype).shape[0] != 1:
@@ -67,10 +68,6 @@ def simulate_genome_evolution_2cut(karyotype, branch_lengths, branch_params):
         
     G = ntx.Graph(edge_list)
     return G, G0
-
-def survival_probability_branch(n, t, gamma, theta):
-    z = (np.exp(-theta) - np.exp(-theta*(n-1)))/(1-np.exp(-theta))
-    return np.exp(-gamma*t*(n+z))
 
 def p_survival_simulations_theory(n, branch_lengths, branch_params):
     p_survive_theory = 1
