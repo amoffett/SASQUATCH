@@ -174,6 +174,6 @@ def bin_T_distribution(T_vals, P_T, bins):
     P_T_binned = np.zeros(len(bins)-1)
     for nt, t in enumerate(T_vals):
         P_T_binned[np.digitize(t,bins)-1] += P_T[nt]
-    T_bins = (bins[1:]-bins[:-1])/2.
+    T_bins = (bins[1:]+bins[:-1])/2.
     return T_bins, P_T_binned
 
