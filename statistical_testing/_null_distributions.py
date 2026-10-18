@@ -67,7 +67,7 @@ def calculate_approximate_T_distribution(n, tree, params, dt, species_present_co
     all_nodes = tree.get_terminals() + tree.get_nonterminals()
     for node in all_nodes:
         if node != tree.root:
-            t = branch_lengths[node.name]
+            t = node.branch_length
             gamma, theta = params[node.name]
             s = survival_probability_branch(n,t,gamma,theta)
             s_l[node.name] = s
