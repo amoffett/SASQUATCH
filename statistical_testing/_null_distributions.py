@@ -177,3 +177,21 @@ def bin_T_distribution(T_vals, P_T, bins):
     T_bins = (bins[1:]+bins[:-1])/2.
     return T_bins, P_T_binned
 
+def find_block_constraints(a, column_labels, tree):
+    MRCA = tree.common_ancestor(column_labels[a.astype(bool)])
+    MRCA_descendants = set([node.name for node in MRCA.get_terminals()])
+    MRCA_non_descendants = set(list(column_labels)) - MRCA_descendants
+    present = list(column_labels[a.astype(bool)])
+    absent = list(set(list(column_labels[(1-a).astype(bool)])) - MRCA_non_descendants)
+    return present, absent, MRCA
+
+def calculate_block_p_value(n, a, column_labels, tree, params, dt = 5e-5):
+    if np.sum(a) == 0:
+        return np.nan
+    else:
+        present, absent, MRCA = find_block_constraints(a, column_labels, tree)
+        T, PT_block = calculate_approximate_T_distribution(n, MRCA, params, dt, species_present_conditional = present, species_absent_conditional = absent)
+        T, PT_all = calculate_approximate_T_distribution(n, MRCA, params, dt)
+        T_hat = np.sum(T * PT_block)
+        p = PT_all[T >= T_hat].sum()
+        return p
